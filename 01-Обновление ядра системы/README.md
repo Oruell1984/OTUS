@@ -11,47 +11,53 @@ uname -r
 6.8.0-107-generic
 ```
 
-
-
-
-Подключаемся по ssh к созданной виртуальной машины.
-Перед работами проверим текущую версию ядра:
-[db@server ~]$ uname -r
-6.8.0-49-generic
-
-Далее зайдём браузеров в репозиторий, где найдём свежую версию ядра для нашей архитектуры https://kernel.ubuntu.com/mainline .
-На момент составления документа нам подходит версия 6.13.2: https://kernel.ubuntu.com/mainline/v6.13.2/ 
-Архитектура системы для процессоров типа x86_64 (uname -p) требуется amd64.
-Находим актуальную ссылку и качаем пакеты на виртуальную машину:
-[db@server ~]$ mkdir kernel && cd kernel
-[db@server ~]$ wget https://kernel.ubuntu.com/mainline/v6.13.2/amd64/linux-headers-6.13.2-061302-generic_6.13.2-061302.202502081010_amd64.deb
-[db@server ~]$ wget https://kernel.ubuntu.com/mainline/v6.13.2/amd64/linux-headers-6.13.2-061302_6.13.2-061302.202502081010_all.deb
-[db@server ~]$ wget https://kernel.ubuntu.com/mainline/v6.13.2/amd64/linux-image-unsigned-6.13.2-061302-generic_6.13.2-061302.202502081010_amd64.deb
-[db@server ~]$ wget https://kernel.ubuntu.com/mainline/v6.13.2/amd64/linux-modules-6.13.2-061302-generic_6.13.2-061302.202502081010_amd64.deb
-
-Устанавливаем все пакеты сразу:
+скачал kerneel версия 6.19.10 c: https://kernel.ubuntu.com/mainline/v6.13.2/ 
+Устанавливил все пакеты сразу:
 [db@server ~]$ sudo dpkg -i *.deb 
+и проверил, что ядро появилось в /boot
 
-Проверяем, что ядро появилось в /boot.
-[db@server ~]$ ls -al /boot
-…
-lrwxrwxrwx  1 root root       29 Feb 20 09:54 vmlinuz -> vmlinuz-6.13.2-061302-generic
--rw-------  1 root root 15647232 Feb  8 10:10 vmlinuz-6.13.2-061302-generic
--rw-------  1 root root 14948744 Aug  2  2024 vmlinuz-6.8.0-41-generic
--rw-------  1 root root 14956936 Nov  1 11:41 vmlinuz-6.8.0-49-generic
-lrwxrwxrwx  1 root root       24 Feb 20 09:54 vmlinuz.old -> vmlinuz-6.8.0-49-generic
-… 
+```bash
+ls -al /boot
+total 204552
+drwxr-xr-x  4 root root     4096 Apr  6 09:56 .
+drwxr-xr-x 23 root root     4096 Apr  6 08:39 ..
+-rw-r--r--  1 root root   306720 Mar 25 11:47 config-6.19.10-061910-generic
+-rw-r--r--  1 root root   287601 Mar 13 13:27 config-6.8.0-107-generic
+drwxr-xr-x  5 root root     4096 Apr  6 10:02 grub
+lrwxrwxrwx  1 root root       33 Apr  6 09:55 initrd.img -> initrd.img-6.19.10-061910-generic
+-rw-r--r--  1 root root 80527033 Apr  6 09:56 initrd.img-6.19.10-061910-generic
+-rw-r--r--  1 root root 76332206 Apr  6 08:41 initrd.img-6.8.0-107-generic
+lrwxrwxrwx  1 root root       28 Apr  6 08:39 initrd.img.old -> initrd.img-6.8.0-107-generic
+drwx------  2 root root    16384 Apr  6 08:30 lost+found
+-rw-------  1 root root 10815061 Mar 25 11:47 System.map-6.19.10-061910-generic
+-rw-------  1 root root  9125925 Mar 13 13:27 System.map-6.8.0-107-generic
+lrwxrwxrwx  1 root root       30 Apr  6 09:55 vmlinuz -> vmlinuz-6.19.10-061910-generic
+-rw-------  1 root root 16978432 Mar 25 11:47 vmlinuz-6.19.10-061910-generic
+-rw-------  1 root root 15042952 Mar 13 17:46 vmlinuz-6.8.0-107-generic
+lrwxrwxrwx  1 root root       25 Apr  6 08:39 vmlinuz.old -> vmlinuz-6.8.0-107-generic
+```
 
-Уже на этом этапе можно перезагрузить нашу виртуальную машину и выбрать новое ядро при загрузке ОС. 
-Если требуется, можно назначить новое ядро по умолчанию вручную:
-1) Обновить конфигурацию загрузчика:
-[db@server ~]$ sudo update-grub
-2) Выбрать загрузку нового ядра по-умолчанию:
-   	[db@server ~]$ sudo grub-set-default 0
+Обновил конфигурацию загрузчика и выбрал загрузку нового ядра
+```bash
+user@lessons01:~$ sudo update-grub
+[sudo] password for user:
+Sourcing file `/etc/default/grub'
+Generating grub configuration file ...
+Found linux image: /boot/vmlinuz-6.19.10-061910-generic
+Found initrd image: /boot/initrd.img-6.19.10-061910-generic
+Found linux image: /boot/vmlinuz-6.8.0-107-generic
+Found initrd image: /boot/initrd.img-6.8.0-107-generic
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done
 
-Далее перезагружаем нашу виртуальную машину с помощью команды sudo reboot
+user@lessons01:~$ sudo grub-set-default 0
 
-После перезагрузки снова проверяем версию ядра (версия должна стать новее):
-[db@server ~]$ uname -r 
-6.13.2-061302-generic
-На этом обновление ядра закончено.
+```
+после перезагрузки проверил версию ядра
+```bash
+uname -r
+6.19.10-061910-generic
+```
