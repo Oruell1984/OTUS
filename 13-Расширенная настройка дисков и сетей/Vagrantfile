@@ -1,0 +1,50 @@
+Vagrant.configure("2") do |config|
+  # 1. Выбор образа (можно заменить на любой другой)
+  config.vm.box = "ubuntu/focal64"
+
+  # 2. Настройка памяти (1024 МБ)
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 1024
+  end
+
+  # 3. Проброс портов: гостевой 80 -> хостовый 8080
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # 4. Добавление двух виртуальных дисков по 1 ГБ
+  config.vm.disk :disk, size: "1GB", name: "disk1"
+  config.vm.disk :disk, size: "1GB", name: "disk2"
+
+  # 5. Провижининг (Shell)
+  config.vm.provision "shell", inline: <<-SHELL
+    # Определяем имена новых дисков (обычно это sdb и sdc, если sda — системный)
+    # Используем lsblk для автоматического поиска дисков размером 1GB, которые не смонтированы
+    DISK1=$(lsblk -dpno NAME,SIZE | grep '1G' | awk 'NR==1{print $1}')
+    DISK2=$(lsblk -dpno NAME,SIZE | grep '1G' | awk 'NR==2{print $1}')
+
+    echo "Найден диск 1: $DISK1"
+    echo "Найден диск 2: $DISK2"
+
+    # Создаем файловую систему ext4
+    mkfs.ext4 -F $DISK1
+    mkfs.ext4 -F $DISK2
+
+    # Создаем точки монтирования
+    mkdir -p /mnt/disk1
+    mkdir -p /mnt/disk2
+
+    # Монтируем диски
+    mount $DISK1 /mnt/disk1
+    mount $DISK2 /mnt/disk2
+
+    # Добавляем записи в /etc/fstab для автоматического монтирования
+    # Используем UUID для надежности
+    UUID1=$(blkid -s UUID -o value $DISK1)
+    UUID2=$(blkid -s UUID -o value $DISK2)
+
+    echo "UUID=$UUID1 /mnt/disk1 ext4 defaults 0 2" >> /etc/fstab
+    echo "UUID=$UUID2 /mnt/disk2 ext4 defaults 0 2" >> /etc/fstab
+
+    # Проверяем fstab
+    mount -a
+  SHELL
+end
