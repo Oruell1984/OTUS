@@ -1,0 +1,11 @@
+# Vagrantfile
+Vagrant.configure("2") do |config|
+  # Используем актуальную Ubuntu LTS (можно заменить на ubuntu/bionic64 или ubuntu/focal64)
+  config.vm.box = "ubuntu/jammy64" # Ubuntu 22.04
+
+  # Запуск нашего скрипта провижининга
+  config.vm.provision "shell", path: "PAM.sh"
+
+  # (Опционально) Проброс портов или настройка сети, если нужно
+  #config.vm.network "forwarded_port", guest: 22, host: 3222, id: "ssh"
+end
